@@ -190,7 +190,7 @@ function locate() {
 }
 
 // ---------- Shared pieces ----------
-const topBar = (user, atHome = false) => `<div class="top"><div class="nav">${atHome ? "" : `<button class="link navbtn" data-act="home" aria-label="Back to home">← Home</button>`}<button class="mark markbtn" data-act="home" aria-label="Dusk home">D<b>U</b>SK</button></div>${user ? `<button class="link" data-act="menu">${esc(user.name ? user.name.split(" ")[0] : "Menu")}</button>` : ""}</div>`;
+const topBar = (user, atHome = false) => `<div class="top"><div class="nav">${atHome ? "" : `<button class="link navbtn" data-act="home" aria-label="Back to home">← Home</button>`}<button class="mark markbtn" data-act="home" aria-label="Dusk home">D<b>U</b>SK</button></div>${user ? `<button class="link" data-act="menu">${esc(user.name ? user.name.split(" ")[0] : "Menu")}</button>` : atHome ? "" : `<button class="link" data-act="home">Sign in</button>`}</div>`;
 const supportBox = () => `<div class="support" role="note"><b>You deserve support right now.</b><span>Talking to someone can help. In India, call <b>Tele-MANAS on 14416</b> (free, any time, in many languages). If you're in immediate danger, call <b>112</b>.</span></div>`;
 function mini(id) { const c = CARD[id]; return c ? DuskArt.card(c, { k: "m" + Math.random().toString(36).slice(2, 7) }) : ""; }
 
@@ -250,7 +250,7 @@ function renderWelcome(error) {
     <p>Dusk is for that stretch in between. You choose how long to cross, from one evening to forty. Each evening at your sunset you turn one card, sit with one question and write a few lines, and the Reader notices what you might miss.</p>
     <p>The crossing moves from the Letting Go, through the Threshold, to the Return. The cards of hope stay locked until you get there.</p>
     <p class="muted small">The cards are mirrors, not forecasts. Dusk never predicts.</p>
-    <button class="btn" data-act="anon">Try a single dusk · 3 cards</button>
+    ${anonInProgress() ? `<button class="btn" data-act="anonnext">Continue your single dusk · card ${anonInProgress().next} of 3</button><button class="link" data-act="anonreset">Start a new single dusk instead</button>` : `<button class="btn" data-act="anon">Try a single dusk · 3 cards</button>`}
     <div class="signin"><div id="gsi"></div><span class="muted small">Sign in for a 7, 21 or 40 evening crossing</span>
     ${location.hostname === "localhost" ? `<button class="link" data-act="devlogin">Sign in as a test user (local only)</button>` : ""}</div>
     ${error ? `<p class="error">${esc(error)}</p>` : ""}
@@ -259,10 +259,15 @@ function renderWelcome(error) {
   <footer>Free while Dusk is being tested.</footer>`;
   mountGoogle();
 }
+let gsiTries = 0;
 function mountGoogle() {
   const el = document.getElementById("gsi");
   if (!el) return;
-  if (!window.google?.accounts?.id) { setTimeout(mountGoogle, 300); return; }
+  if (!window.google?.accounts?.id) {
+    if (++gsiTries > 25) { el.innerHTML = `<p class="error">Google sign-in didn't load. Check your connection, then refresh the page.</p>`; return; }
+    setTimeout(mountGoogle, 300); return;
+  }
+  gsiTries = 0;
   google.accounts.id.initialize({ client_id: CONFIG.googleClientId, callback: onGoogle });
   google.accounts.id.renderButton(el, { theme: "outline", size: "large", shape: "pill", text: "signin_with" });
 }
@@ -486,10 +491,14 @@ app.addEventListener("click", async (e) => {
 });
 function alertBox(msg) { const p = document.createElement("p"); p.className = "error"; p.textContent = msg; app.appendChild(p); }
 window.addEventListener("popstate", () => route());
+function anonInProgress() {
+  const a = store.get("anon");
+  if (!a || !a.evenings || !a.evenings.length) return null;
+  const done = a.evenings.filter((e) => e.entry != null).length;
+  return done >= 3 ? null : { next: Math.min(done + 1, 3) };
+}
 function route() {
   if (store.get("session")) return renderHome();
-  const a = store.get("anon");
-  if (a && a.evenings.length && !(a.evenings.length >= 3 && a.evenings[2].entry != null)) return renderAnonOffer();
   renderWelcome();
 }
 fetch("cards.json").then((r) => r.json()).then((c) => { CARDS = c; CARD = Object.fromEntries(c.map((x) => [x.id, x])); route(); })
