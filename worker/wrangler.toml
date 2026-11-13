@@ -1,0 +1,12 @@
+name = "dusk-worker"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dusk-db"
+database_id = "bffeafb7-83ad-42a7-8904-231b12b7a655"
+
+[vars]
+GOOGLE_CLIENT_ID = "707397213573-os17j541rvl77qnc7085f1pafeimulha.apps.googleusercontent.com"
+ALLOWED_ORIGINS = "https://dusk-crossing.netlify.app,http://localhost:8788"
