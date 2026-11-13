@@ -32,3 +32,6 @@ CREATE TABLE IF NOT EXISTS anon_usage (
   ip TEXT NOT NULL, day TEXT NOT NULL, count INTEGER DEFAULT 0,
   PRIMARY KEY (ip, day)
 );
+CREATE TABLE IF NOT EXISTS reader_errors (
+  at TEXT DEFAULT (datetime('now')), detail TEXT
+);

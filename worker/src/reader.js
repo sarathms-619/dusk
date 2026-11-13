@@ -56,15 +56,24 @@ function historyText(evenings, cardsById) {
 async function ask(env, prompt, schema, maxTokens) {
   if (!env.ANTHROPIC_API_KEY) return null; // local development without a key
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  const response = await client.beta.messages.create({
-    model: "claude-opus-5-5",
-    max_tokens: maxTokens,
-    betas: ["server-side-fallback-2026-07-01"],
-    fallbacks: "default",
-    system: READER_SYSTEM,
-    output_config: { effort: "low", format: { type: "json_schema", schema } },
-    messages: [{ role: "user", content: prompt }],
-  });
+  let response;
+  try {
+    response = await client.beta.messages.create({
+      model: "claude-opus-5-5",
+      max_tokens: maxTokens,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      system: READER_SYSTEM,
+      output_config: { effort: "low", format: { type: "json_schema", schema } },
+      messages: [{ role: "user", content: prompt }],
+    });
+  } catch (e) {
+    // Record what went wrong so it can be diagnosed, then let the caller use its gentle fallback.
+    const detail = `${e.status || ""} ${e.name || ""} ${e.message || e}`.slice(0, 1000);
+    console.error("Reader call failed:", detail);
+    await env.DB.prepare("INSERT INTO reader_errors (detail) VALUES (?1)").bind(detail).run().catch(() => {});
+    return null;
+  }
   if (response.stop_reason === "refusal") return null;
   const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("");
   try {

@@ -31,7 +31,10 @@ h2{font-size:30px;line-height:1.15}
 h3{font-size:22px;line-height:1.2}
 p{margin:0}
 .top{display:flex;justify-content:space-between;align-items:center}
+.nav{display:flex;align-items:center;gap:14px}
 .mark{font-family:var(--title);letter-spacing:.24em;font-size:15px;color:var(--ink)}
+.markbtn{appearance:none;background:none;border:0;padding:4px 0;cursor:pointer}
+.navbtn{text-decoration:none;font-size:16px;padding:6px 0}
 .mark b{color:var(--plum);font-weight:500}
 .eyebrow{font-family:var(--title);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--plum)}
 .muted{color:var(--ink-2)}
@@ -169,13 +172,13 @@ function locate() {
 }
 
 // ---------- Shared pieces ----------
-const topBar = (user) => `<div class="top"><span class="mark">D<b>U</b>SK</span>${user ? `<button class="link" data-act="menu">${esc(user.name ? user.name.split(" ")[0] : "Menu")}</button>` : ""}</div>`;
+const topBar = (user, atHome = false) => `<div class="top"><div class="nav">${atHome ? "" : `<button class="link navbtn" data-act="home" aria-label="Back to home">← Home</button>`}<button class="mark markbtn" data-act="home" aria-label="Dusk home">D<b>U</b>SK</button></div>${user ? `<button class="link" data-act="menu">${esc(user.name ? user.name.split(" ")[0] : "Menu")}</button>` : ""}</div>`;
 const supportBox = () => `<div class="support" role="note"><b>You deserve support right now.</b><span>Talking to someone can help. In India, call <b>Tele-MANAS on 14416</b> (free, any time, in many languages). If you're in immediate danger, call <b>112</b>.</span></div>`;
 function mini(id) { const c = CARD[id]; return c ? DuskArt.card(c, { k: "m" + Math.random().toString(36).slice(2, 7) }) : ""; }
 
 // ---------- Welcome ----------
 function renderWelcome(error) {
-  app.innerHTML = `${topBar()}
+  app.innerHTML = `${topBar(null, true)}
   <section class="hero"><h1>D<em>U</em>SK</h1><p class="tagline">For the hour between who you were and who you're becoming.</p><div class="sun" aria-hidden="true"></div></section>
   <section class="panel">
     <p>Dusk turns a transition into a crossing. Each evening at sunset you pick a tarot card, sit with one question, and write a few lines. The Reader notices what you might not.</p>
@@ -232,7 +235,7 @@ function renderBegin(opts = {}) {
 // ---------- Signed-in crossing home ----------
 async function renderHome() {
   const user = store.get("user");
-  app.innerHTML = `${topBar(user)}<p class="loading">Finding your crossing…</p>`;
+  app.innerHTML = `${topBar(user, true)}<p class="loading">Finding your crossing…</p>`;
   let b;
   try { b = await api("/crossing"); } catch (e) { if (!store.get("session")) return renderWelcome(e.message); app.innerHTML = `${topBar(user)}<section class="panel"><p class="error">${esc(e.message)}</p><button class="btn" data-act="home">Try again</button></section>`; return; }
   if (!b.crossing) return renderBegin();
@@ -241,7 +244,7 @@ async function renderHome() {
   const mv = movementFor(c.length, next);
   const unlocked = c.length === 3 || testMode() || daysBetween(c.start_date, today()) >= done;
   const reading = [...b.readings].reverse().find((r) => r.week < 99);
-  app.innerHTML = `${topBar(user)}
+  app.innerHTML = `${topBar(user, true)}
   <section class="panel">
     <span class="eyebrow">${MOVEMENT_NAME[mv]}</span>
     <h2>Evening ${next} of ${c.length}</h2>
@@ -388,6 +391,8 @@ function renderMenu() {
 app.addEventListener("click", async (e) => {
   const t = e.target.closest("[data-act]"); if (!t) return;
   const act = t.dataset.act;
+  if (act !== "home" && act !== "signout" && !history.state) history.pushState({ dusk: 1 }, "");
+  if (act === "home" && history.state) history.replaceState(null, "");
   try {
     if (act === "home") route();
     else if (act === "anon") renderBegin({ anon: true });
@@ -404,6 +409,7 @@ app.addEventListener("click", async (e) => {
   } catch (er) { t.disabled = false; alertBox(er.message); }
 });
 function alertBox(msg) { const p = document.createElement("p"); p.className = "error"; p.textContent = msg; app.appendChild(p); }
+window.addEventListener("popstate", () => route());
 function route() {
   if (store.get("session")) return renderHome();
   const a = store.get("anon");
