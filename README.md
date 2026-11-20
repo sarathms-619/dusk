@@ -16,7 +16,8 @@ Live: https://dusk-crossing.netlify.app
 | `worker/src/index.js` | Cloudflare Worker API: crossings, evenings, card offers, the single dusk |
 | `worker/src/auth.js` | Google ID-token verification and signed session tokens |
 | `worker/src/reader.js` | The Reader's prompts and Claude calls |
-| `worker/schema.sql` | D1 tables: users, crossings, evenings, readings, anon_usage |
+| `worker/schema.sql` | D1 tables: users, crossings, evenings, readings, checkins, anon_usage, reader_errors |
+| `worker/migrations/` | One-off changes for databases created before them |
 
 `worker/src/cards.json` is a copy of `site/cards.json`. Edit the site copy and copy it across.
 
@@ -38,6 +39,12 @@ Worker (needs a Cloudflare API token with Workers and D1 edit access):
 
 ```bash
 cd worker && npm run db:schema && npm run deploy
+```
+
+A new database only needs `schema.sql`. A database created before a migration in `worker/migrations/` needs that file run once:
+
+```bash
+npx wrangler d1 execute dusk-db --remote --file=migrations/002_outcomes.sql
 ```
 
 Site: deploy the `site/` folder to the `dusk-crossing` Netlify site.

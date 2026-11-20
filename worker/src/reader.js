@@ -48,7 +48,7 @@ function historyText(evenings, cardsById) {
   return evenings
     .map((e) => {
       const c = cardsById[e.picked];
-      return `Evening ${e.n} (${e.movement}): picked ${c ? c.name : e.picked}. Question: ${e.question || "-"}. They wrote: ${e.entry ? e.entry.slice(0, 600) : "(nothing)"}`;
+      return `Evening ${e.n} (${e.movement}): picked ${c ? c.name : e.picked}. The evening felt: ${e.weather || "not said"}. Question: ${e.question || "-"}. They wrote: ${e.entry ? e.entry.slice(0, 600) : "(nothing)"}`;
     })
     .join("\n");
 }
@@ -85,7 +85,8 @@ async function ask(env, prompt, schema, maxTokens) {
 
 export async function eveningLine(env, { crossing, evening, card, earlier, cardsById }) {
   const prompt = `The person's junction, in their words: "${crossing.junction_words || crossing.junction_type || "not given"}".
-Crossing length: ${crossing.length} evenings. Tonight is evening ${evening.n}, in the movement "${evening.movement}".
+What they hope this crossing gives them: "${crossing.intention || "not given"}".
+Crossing length: ${crossing.length} evenings. Tonight is evening ${evening.n}, in the movement "${evening.movement}". Tonight felt: ${evening.weather || "not said"}.
 
 Earlier evenings:
 ${historyText(earlier, cardsById)}
@@ -100,7 +101,7 @@ Write the Reader's line for tonight.`;
 }
 
 export async function weeklyReading(env, { crossing, evenings, cardsById, week }) {
-  const prompt = `The person's junction, in their words: "${crossing.junction_words || crossing.junction_type || "not given"}". Crossing length: ${crossing.length} evenings. This is the reading at the end of week ${week}.
+  const prompt = `The person's junction, in their words: "${crossing.junction_words || crossing.junction_type || "not given"}". What they hope this crossing gives them: "${crossing.intention || "not given"}". Crossing length: ${crossing.length} evenings. This is the reading at the end of week ${week}.
 
 All evenings so far:
 ${historyText(evenings, cardsById)}
@@ -110,7 +111,7 @@ Write the weekly reading: two or three specific observations about patterns in t
 }
 
 export async function closingReflection(env, { crossing, evenings, cardsById }) {
-  const prompt = `The person's junction, in their words: "${crossing.junction_words || crossing.junction_type || "not given"}". They have finished a ${crossing.length}-evening crossing.
+  const prompt = `The person's junction, in their words: "${crossing.junction_words || crossing.junction_type || "not given"}". They have finished a ${crossing.length}-evening crossing. What they hoped it would give them: "${crossing.intention || "not given"}".
 
 Every evening:
 ${historyText(evenings, cardsById)}

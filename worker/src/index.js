@@ -5,6 +5,9 @@ import CARDS from "./cards.json";
 const cardsById = Object.fromEntries(CARDS.map((c) => [c.id, c]));
 const SPLITS = { 3: [1, 1, 1], 7: [2, 3, 2], 21: [4, 13, 4], 40: [7, 26, 7] };
 const ANON_DAILY_LIMIT = 6;
+const WEATHER = ["stormy", "heavy", "foggy", "still", "clear", "bright"];
+const score = (v) => { const n = parseInt(v, 10); return n >= 1 && n <= 10 ? n : null; };
+const compassOf = (c) => (c && score(c.steadiness) && score(c.clarity) && score(c.hope)) ? { steadiness: score(c.steadiness), clarity: score(c.clarity), hope: score(c.hope) } : null;
 
 // Which movement a given evening belongs to.
 export function movementFor(length, n) {
@@ -53,10 +56,12 @@ async function loadCrossing(env, uid, crossingId) {
 async function crossingBundle(env, c) {
   const evenings = (await env.DB.prepare("SELECT * FROM evenings WHERE crossing_id = ?1 ORDER BY n").bind(c.id).all()).results;
   const readings = (await env.DB.prepare("SELECT * FROM readings WHERE crossing_id = ?1 ORDER BY week").bind(c.id).all()).results;
+  const checkins = (await env.DB.prepare("SELECT kind, week, steadiness, clarity, hope, created_at FROM checkins WHERE crossing_id = ?1 ORDER BY created_at").bind(c.id).all()).results;
   return {
     crossing: c,
     evenings: evenings.map((e) => ({ ...e, offered: e.offered ? JSON.parse(e.offered) : [] })),
     readings: readings.map((r) => ({ ...r, text: r.text ? JSON.parse(r.text) : null })),
+    checkins,
   };
 }
 
@@ -96,7 +101,7 @@ async function handle(request, env, ctx) {
       n: i + 1, movement: movementFor(3, i + 1), picked: String(e.picked || ""), question: String(e.question || "").slice(0, 300), entry: String(e.entry || "").slice(0, 2000),
     }));
     const crossing = { junction_words: String(body.junction_words || "").slice(0, 500), length: 3 };
-    const evening = { n, movement: movementFor(3, n), question: String(body.question || "").slice(0, 300), entry: String(body.entry || "").slice(0, 4000) };
+    const evening = { n, movement: movementFor(3, n), question: String(body.question || "").slice(0, 300), entry: String(body.entry || "").slice(0, 4000), weather: WEATHER.includes(body.weather) ? body.weather : null };
     return await eveningLine(env, { crossing, evening, card, earlier, cardsById });
   }
 
@@ -126,9 +131,12 @@ async function handle(request, env, ctx) {
       junction_type: String(body.junction_type || "").slice(0, 60),
       junction_words: String(body.junction_words || "").slice(0, 1000),
       length, start_date: String(body.start_date || new Date().toISOString().slice(0, 10)).slice(0, 10),
+      intention: String(body.intention || "").slice(0, 600),
     };
-    await env.DB.prepare("INSERT INTO crossings (id, user_id, junction_type, junction_words, length, start_date) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
-      .bind(c.id, c.user_id, c.junction_type, c.junction_words, c.length, c.start_date).run();
+    await env.DB.prepare("INSERT INTO crossings (id, user_id, junction_type, junction_words, length, start_date, intention) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
+      .bind(c.id, c.user_id, c.junction_type, c.junction_words, c.length, c.start_date, c.intention).run();
+    const start = compassOf(body.compass);
+    if (start) await env.DB.prepare("INSERT INTO checkins (id, crossing_id, kind, week, steadiness, clarity, hope) VALUES (?1, ?2, 'start', 0, ?3, ?4, ?5)").bind(id(), c.id, start.steadiness, start.clarity, start.hope).run();
     return await crossingBundle(env, await loadCrossing(env, uid, c.id));
   }
 
@@ -169,11 +177,12 @@ async function handle(request, env, ctx) {
     const e = await env.DB.prepare("SELECT * FROM evenings WHERE crossing_id = ?1 AND n = ?2").bind(c.id, body.n).first();
     if (!e || !e.picked) throw new HttpError(400, "Pick tonight's card first.");
     const entry = String(body.entry || "").slice(0, 6000);
-    const earlier = (await env.DB.prepare("SELECT n, movement, picked, question, entry FROM evenings WHERE crossing_id = ?1 AND n < ?2 ORDER BY n").bind(c.id, e.n).all()).results;
-    const reader = await eveningLine(env, { crossing: c, evening: { ...e, entry }, card: cardsById[e.picked], earlier, cardsById });
-    await env.DB.prepare("UPDATE evenings SET entry = ?1, reader_line = ?2 WHERE id = ?3").bind(entry, reader.line, e.id).run();
+    const weather = WEATHER.includes(body.weather) ? body.weather : null;
+    const earlier = (await env.DB.prepare("SELECT n, movement, picked, question, entry, weather FROM evenings WHERE crossing_id = ?1 AND n < ?2 ORDER BY n").bind(c.id, e.n).all()).results;
+    const reader = await eveningLine(env, { crossing: c, evening: { ...e, entry, weather }, card: cardsById[e.picked], earlier, cardsById });
+    await env.DB.prepare("UPDATE evenings SET entry = ?1, reader_line = ?2, weather = ?3 WHERE id = ?4").bind(entry, reader.line, weather, e.id).run();
 
-    const all = [...earlier, { n: e.n, movement: e.movement, picked: e.picked, question: e.question, entry }];
+    const all = [...earlier, { n: e.n, movement: e.movement, picked: e.picked, question: e.question, entry, weather }];
     let reading = null;
     if (e.n === c.length) {
       const closing = await closingReflection(env, { crossing: c, evenings: all, cardsById });
@@ -187,6 +196,25 @@ async function handle(request, env, ctx) {
       reading = { week, text: w };
     }
     return { reader_line: reader.line, needs_support: reader.needs_support, reading };
+  }
+
+  if (pathname === "/checkin" && request.method === "POST") {
+    const c = await loadCrossing(env, uid, body.crossing_id);
+    const kind = ["week", "return"].includes(body.kind) ? body.kind : null;
+    const v = compassOf(body);
+    if (!kind || !v) throw new HttpError(400, "Set all three readings between 1 and 10.");
+    const week = kind === "week" ? parseInt(body.week, 10) || null : 99;
+    await env.DB.prepare("DELETE FROM checkins WHERE crossing_id = ?1 AND kind = ?2 AND week IS ?3").bind(c.id, kind, week).run();
+    await env.DB.prepare("INSERT INTO checkins (id, crossing_id, kind, week, steadiness, clarity, hope) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)").bind(id(), c.id, kind, week, v.steadiness, v.clarity, v.hope).run();
+    return await crossingBundle(env, c);
+  }
+
+  if (pathname === "/crossing/outcome" && request.method === "POST") {
+    const c = await loadCrossing(env, uid, body.crossing_id);
+    const answer = ["yes", "partly", "not-yet"].includes(body.answer) ? body.answer : null;
+    if (!answer) throw new HttpError(400, "Choose yes, partly or not yet.");
+    await env.DB.prepare("UPDATE crossings SET outcome_answer = ?1, outcome_note = ?2 WHERE id = ?3").bind(answer, String(body.note || "").slice(0, 1000), c.id).run();
+    return await crossingBundle(env, await loadCrossing(env, uid, c.id));
   }
 
   throw new HttpError(404, "Not found");

@@ -115,6 +115,39 @@ textarea:focus{outline:2px solid rgba(125,91,155,.35);border-color:var(--plum)}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .row > *{flex:1}
 footer{text-align:center;font-size:13px;color:var(--ink-3);padding-top:8px}
+.why{font-size:15px;color:var(--ink-2);border-left:2px solid var(--sun);padding-left:10px}
+.opt span small.best{color:var(--ink-2);font-size:14px;margin-top:2px}
+.expect{display:grid;gap:6px;font-size:15.5px;color:var(--ink-2)}
+.expect li{margin-left:-6px}
+.expect ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.compass{display:grid;gap:14px}
+.crow{display:grid;gap:4px}
+.crow label{display:flex;justify-content:space-between;font-size:16px}
+.crow label output{font-family:var(--title);color:var(--plum);min-width:2ch;text-align:right}
+.crow input[type=range]{width:100%;accent-color:var(--plum)}
+.crow .ends{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-3)}
+.wx{display:flex;flex-wrap:wrap;gap:8px}
+.wx .chip i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.moved{display:grid;gap:12px}
+.mrow{display:grid;gap:4px;font-size:15.5px}
+.mrow .bar{position:relative;height:16px}
+.mrow .bar::before{content:"";position:absolute;left:0;right:0;top:7px;height:2px;background:rgba(43,37,71,.10);border-radius:2px}
+.mrow .bar i{position:absolute;top:2px;width:12px;height:12px;border-radius:50%;transform:translateX(-50%)}
+.mrow .bar i.a{background:#fff;border:2px solid var(--ink-3)}
+.mrow .bar i.b{background:var(--sun)}
+.mrow .bar b{position:absolute;top:7px;height:2px;background:var(--sun)}
+.mrow .lbl{display:flex;justify-content:space-between}
+.mrow .lbl span:last-child{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.wstrip{display:flex;flex-wrap:wrap;gap:4px}
+.wstrip i{width:16px;height:16px;border-radius:4px;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:13px;color:var(--ink-3)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.guide h3{margin-bottom:2px}
+.guide p,.guide li{font-size:16.5px}
+.guide ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.guide .src{font-size:14px;color:var(--ink-3)}
+.guide .src a{color:var(--plum)}
 </style>
 </head>
 <body>
@@ -130,11 +163,31 @@ const SPLITS = { 3: [1, 1, 1], 7: [2, 3, 2], 21: [4, 13, 4], 40: [7, 26, 7] };
 const MOVEMENT_NAME = { "letting-go": "The Letting Go", threshold: "The Threshold", return: "The Return" };
 const JUNCTIONS = ["A job", "A role", "A city", "A relationship", "A loss", "A chapter", "Something else"];
 const LENGTHS = [
-  { n: 3, name: "One dusk", sub: "3 cards, all tonight" },
-  { n: 7, name: "A week", sub: "7 evenings" },
-  { n: 21, name: "Three weeks", sub: "21 evenings" },
-  { n: 40, name: "A mandala", sub: "40 evenings" },
+  { n: 3, name: "One dusk", sub: "3 cards, all tonight",
+    best: "For a moment rather than a season: the night before an interview, the day after a hard conversation.",
+    why: "A beginning, a middle and an end in one sitting. Every rite of passage moves through those three phases, and here you walk them in ten minutes." },
+  { n: 7, name: "A week", sub: "7 evenings",
+    best: "For a contained change you're already inside: a new team, the first week after resigning, a move you've just made.",
+    why: "Long enough to notice a pattern, short enough to finish. Two evenings of letting go, three at the threshold, two to return." },
+  { n: 21, name: "Three weeks", sub: "21 evenings",
+    best: "For a transition that's still unfolding: a job search, a role change, the early weeks after an ending.",
+    why: "Three weeks gives the Reader three weekly readings, enough to see what repeats in your cards and your words. It isn't because habits take 21 days; research says they don't." },
+  { n: 40, name: "A mandala", sub: "40 evenings",
+    best: "For the big crossings: a layoff, a loss, a new chapter of life.",
+    why: "Forty days is a traditional length for a sustained practice, the mandala of daily practice in yoga among them. It gives the longest Threshold, 26 evenings, for change that takes time." },
 ];
+const WEATHER = [
+  { id: "stormy", label: "Stormy", c: "#8E86A8" }, { id: "heavy", label: "Heavy", c: "#A991C9" },
+  { id: "foggy", label: "Foggy", c: "#CFC8DD" }, { id: "still", label: "Still", c: "#C9D3F0" },
+  { id: "clear", label: "Clear", c: "#F3C99A" }, { id: "bright", label: "Bright", c: "#E9A15B" },
+];
+const WX = Object.fromEntries(WEATHER.map((w) => [w.id, w]));
+const COMPASS = [
+  { k: "steadiness", q: "How steady do I feel?", lo: "Shaken", hi: "Steady" },
+  { k: "clarity", q: "How clear is my next step?", lo: "No idea yet", hi: "Clear" },
+  { k: "hope", q: "How hopeful do I feel?", lo: "Low", hi: "Hopeful" },
+];
+const ANSWERS = { yes: "Yes", partly: "Partly", "not-yet": "Not yet" };
 let CARDS = [], CARD = {};
 const app = document.getElementById("app");
 const store = {
@@ -227,6 +280,103 @@ function waitingHtml(len) {
   <p class="small muted"><b style="color:var(--ink)">The Return · ${n} ${n === 1 ? "card waits" : "cards wait"} for you.</b><br>The Star, the Sun and the World stay locked until you reach them.</p></section>`;
 }
 
+// ---------- What to expect, the compass, the weather ----------
+const addDays = (s, n) => { const d = new Date(s + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+function expectHtml(len) {
+  const [l, t] = SPLITS[len];
+  const weeks = []; for (let w = 7; w < len; w += 7) if (len >= 21) weeks.push(w);
+  const end = addDays(today(), len - 1);
+  return `<div class="expect"><span class="eyebrow">What to expect</span><ul>
+    <li>${len === 3 ? "Three cards tonight, in one sitting of about 10 to 15 minutes." : `${len} evenings, one a day, about 5 to 10 minutes each. You'd return around <b>${fmtDate(end)}</b>.`}</li>
+    <li>The Letting Go: ${l === 1 ? "evening 1" : `evenings 1 to ${l}`}. The Threshold: ${t === 1 ? `evening ${l + 1}` : `evenings ${l + 1} to ${l + t}`}. The Return: ${len - l - t === 1 ? `evening ${len}` : `evenings ${l + t + 1} to ${len}`}.</li>
+    ${weeks.length ? `<li>A weekly reading and a short check-in after evenings ${weeks.join(", ")}.</li>` : ""}
+    <li>At the end: a Crossing Scroll showing how you moved.</li>
+    ${len > 3 ? "<li>Miss an evening and your crossing simply waits. Nothing resets.</li>" : ""}
+  </ul></div>`;
+}
+function compassHtml(prefix, v = {}) {
+  return `<div class="compass">${COMPASS.map((c) => { const val = v[c.k] || 5; return `<div class="crow">
+    <label for="${prefix}-${c.k}"><span>${c.q}</span><output id="${prefix}-${c.k}-o">${val}</output></label>
+    <input type="range" id="${prefix}-${c.k}" min="1" max="10" step="1" value="${val}" oninput="document.getElementById('${prefix}-${c.k}-o').textContent=this.value">
+    <div class="ends"><span>${c.lo}</span><span>${c.hi}</span></div></div>`; }).join("")}</div>`;
+}
+const readCompass = (prefix) => Object.fromEntries(COMPASS.map((c) => [c.k, +document.getElementById(`${prefix}-${c.k}`).value]));
+const weatherPicker = () => `<div class="crow"><span class="muted small">How does tonight feel?</span><div class="wx" id="wx">${WEATHER.map((w) => `<button class="chip" aria-pressed="false" data-w="${w.id}"><i style="background:${w.c}"></i>${w.label}</button>`).join("")}</div></div>`;
+const weatherStrip = (evs) => `<div class="wstrip" aria-label="The weather of each evening">${evs.map((e) => `<i title="Evening ${e.n}: ${e.weather ? WX[e.weather].label : "not set"}" style="background:${e.weather ? WX[e.weather].c : "rgba(43,37,71,.08)"}"></i>`).join("")}</div>
+  <div class="legend">${WEATHER.map((w) => `<span><i style="background:${w.c}"></i>${w.label}</span>`).join("")}</div>`;
+function movedRows(a, b) {
+  return COMPASS.map((c) => {
+    const x = a[c.k], y = b ? b[c.k] : null, pos = (n) => ((n - 1) / 9) * 100;
+    const lo = Math.min(x, y ?? x), hi = Math.max(x, y ?? x);
+    return `<div class="mrow"><div class="lbl"><span>${c.q}</span><span>${y == null ? x : `${x} → ${y}`}</span></div>
+      <div class="bar">${y != null ? `<b style="left:${pos(lo)}%;width:${pos(hi) - pos(lo)}%"></b>` : ""}<i class="a" style="left:${pos(x)}%"></i>${y != null ? `<i class="b" style="left:${pos(y)}%"></i>` : ""}</div></div>`;
+  }).join("");
+}
+const STOP = new Set("that this with have just from they what when been were will would could should about there their them then than into your yours mine also because really still very much some more over only like feel feels felt know want wanted need even here where which while being does doesn't didn't don't can't it's i'm i've i'll isn't wasn't".split(" "));
+function wordShift(entries) {
+  const words = (s) => (String(s || "").toLowerCase().match(/[a-z']{4,}/g) || []).filter((w) => !STOP.has(w));
+  const half = Math.ceil(entries.length / 2), count = (list) => list.flatMap((e) => words(e.entry)).reduce((m, w) => (m[w] = (m[w] || 0) + 1, m), {});
+  const A = count(entries.slice(0, half)), B = count(entries.slice(half));
+  let faded = null, grew = null;
+  for (const w of new Set([...Object.keys(A), ...Object.keys(B)])) {
+    const d = (B[w] || 0) - (A[w] || 0);
+    if ((A[w] || 0) >= 2 && (!faded || d < faded.d)) faded = { w, d, a: A[w] || 0, b: B[w] || 0 };
+    if ((B[w] || 0) >= 2 && (!grew || d > grew.d)) grew = { w, d, a: A[w] || 0, b: B[w] || 0 };
+  }
+  return { faded: faded && faded.d < 0 ? faded : null, grew: grew && grew.d > 0 ? grew : null };
+}
+function movedPanel(b) {
+  const c = b.crossing, ev = b.evenings.filter((e) => e.entry !== null);
+  const start = b.checkins.find((x) => x.kind === "start"), end = [...b.checkins].reverse().find((x) => x.kind === "return") || [...b.checkins].reverse().find((x) => x.kind === "week");
+  const ws = ev.length >= 6 ? wordShift(ev) : {};
+  return `<section class="panel moved"><span class="eyebrow">How you moved</span>
+    ${c.intention ? `<p><span class="muted small">You came for</span><br><span class="question" style="font-size:20px">${esc(c.intention)}</span>${c.outcome_answer ? `<br><span class="muted small">Did you find it?</span> <b>${ANSWERS[c.outcome_answer]}</b>${c.outcome_note ? ` · ${esc(c.outcome_note)}` : ""}` : ""}</p>` : ""}
+    ${start ? `<div class="moved">${movedRows(start, end)}</div><p class="muted small">${end ? "Hollow dot: where you started. Filled: where you are now." : "Your starting point. Check-ins add the rest."}</p>` : ""}
+    ${ev.length ? `<div><span class="muted small">The weather of each evening</span>${weatherStrip(ev)}</div>` : ""}
+    ${ws.faded || ws.grew ? `<p class="small">${ws.faded ? `Faded: <b>“${esc(ws.faded.w)}”</b> (${ws.faded.a} times early on, ${ws.faded.b} later). ` : ""}${ws.grew ? `Grew: <b>“${esc(ws.grew.w)}”</b> (${ws.grew.a} early on, ${ws.grew.b} later).` : ""}</p>` : ""}
+    <p class="muted small">These are your own readings, for you. Dusk doesn't score you.</p>
+  </section>`;
+}
+
+// ---------- How Dusk works ----------
+function renderGuide() {
+  setSky("threshold");
+  app.innerHTML = `${topBar(store.get("user"))}
+  <section class="panel guide"><span class="eyebrow">How Dusk works</span><h2>A practice for the time between an ending and a beginning.</h2>
+    <p>When something ends, a job, a role, a city, a relationship, there's a stretch before the next thing takes shape. Most tools rush you through it: update the CV, make a plan, move on. Dusk gives that stretch a shape instead, so you cross it rather than wait it out.</p></section>
+  <section class="panel guide"><h3>When</h3><p>Once a day, at dusk. Dusk works out your local sunset and that's when your evening opens. Any time in the evening is fine; sunset is the invitation, not a deadline.</p></section>
+  <section class="panel guide"><h3>What you do each evening</h3><ul>
+    <li><b>Pick one of three face-down cards.</b> Choosing is part of the reflection.</li>
+    <li><b>Read its meaning and one question.</b> The question is the point; the card is a way in.</li>
+    <li><b>Say how the evening feels</b> in one tap: stormy, heavy, foggy, still, clear or bright.</li>
+    <li><b>Write for a few minutes.</b> No word count, no right answer.</li>
+    <li><b>The Reader replies</b> with one thing it noticed, sometimes linking tonight to an earlier evening.</li></ul></section>
+  <section class="panel guide"><h3>What's expected of you</h3><ul>
+    <li>Honesty, not eloquence. A few true lines are worth more than a polished page.</li>
+    <li>Showing up most evenings. Miss one and the crossing waits for you; research on daily habits found that missing a day doesn't undo the effort.</li>
+    <li>Nothing else. There are no streaks, no scores, no right cards.</li></ul></section>
+  <section class="panel guide"><h3>Choosing a length</h3>${LENGTHS.map((l) => `<p><b>${l.n} · ${l.name}.</b> ${l.best} <span class="why" style="display:block;margin-top:4px">${l.why}</span></p>`).join("")}</section>
+  <section class="panel guide"><h3>The three movements</h3><ul>
+    <li><b>The Letting Go:</b> naming what ended and what you're still carrying. Cards of endings: Death, the Tower, the Eight of Cups.</li>
+    <li><b>The Threshold:</b> the long middle, where the old self has gone and the new one hasn't formed. Cards of waiting and inner work: the Hanged Man, the Hermit, the Moon.</li>
+    <li><b>The Return:</b> stepping into what's next. The Star, the Sun and the World stay locked until you reach it, and every crossing ends on the Fool.</li></ul></section>
+  <section class="panel guide"><h3>What you get, and how change is tracked</h3><ul>
+    <li><b>Your intention.</b> At the start you write what would make this crossing worth it. At the Return you're asked whether you found it.</li>
+    <li><b>Your compass.</b> Three quick readings from 1 to 10, for steadiness, clarity about your next step and hope. You set them at the start, at each weekly check-in and at the Return.</li>
+    <li><b>The weather of each evening,</b> so you can see the season you crossed.</li>
+    <li><b>Your words.</b> The Scroll shows a word that faded and a word that grew between the first half and the second.</li>
+    <li><b>The Crossing Scroll</b> keeps every card, every entry, the Reader's closing reflection and how you moved.</li></ul>
+    <p class="muted small">Everything is self-reported and for you alone. Dusk doesn't score you or compare you with anyone.</p></section>
+  <section class="panel guide"><h3>What Dusk is not</h3><ul>
+    <li><b>Not fortune-telling.</b> The cards are mirrors for reflection. Dusk never predicts what will happen.</li>
+    <li><b>Not therapy.</b> If you're struggling, please talk to someone. In India, Tele-MANAS is free on 14416, any time.</li>
+    <li><b>Not a feed.</b> Your words are private: only you and the Reader see them.</li></ul></section>
+  <section class="panel guide"><h3>Why this can help</h3>
+    <p>Small rituals, even invented ones, have been shown to ease grief by restoring a sense of control, and to reduce anxiety before hard moments. Writing about difficult experiences has a modest but real benefit across many studies. Dusk combines the two: a small ritual at a fixed time of day, and a few minutes of honest writing. It makes no bigger claim than that.</p>
+    <p class="src">Sources: <a href="https://dash.harvard.edu/bitstream/1/10683152/1/norton%20gino_rituals-and-grief.pdf" target="_blank" rel="noopener">Norton &amp; Gino, 2014</a> · <a href="https://static1.squarespace.com/static/5c171ac1710699e060ed3d94/t/5c7affe5fa0d60728a773fd1/1551564774337/dont-stop-believing.pdf" target="_blank" rel="noopener">Brooks et al., 2016</a> · <a href="https://Www.Gwern.net/doc/psychology/2006-frattaroli.pdf" target="_blank" rel="noopener">Frattaroli, 2006</a> · <a href="https://blogs.ucl.ac.uk/bsh/2012/06/29" target="_blank" rel="noopener">Lally et al., 2010</a></p></section>
+  <button class="btn" data-act="home">${store.get("session") ? "Back to my crossing" : "Back to the start"}</button>`;
+}
+
 // ---------- Add to home screen ----------
 let installEvent = null;
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvent = e; const el = document.getElementById("installbox"); if (el) el.outerHTML = installHtml(); });
@@ -249,7 +399,7 @@ function renderWelcome(error) {
     <h2>Something has ended. Something else hasn't begun yet.</h2>
     <p>Dusk is for that stretch in between. You choose how long to cross, from one evening to forty. Each evening at your sunset you turn one card, sit with one question and write a few lines, and the Reader notices what you might miss.</p>
     <p>The crossing moves from the Letting Go, through the Threshold, to the Return. The cards of hope stay locked until you get there.</p>
-    <p class="muted small">The cards are mirrors, not forecasts. Dusk never predicts.</p>
+    <p class="muted small">The cards are mirrors, not forecasts. Dusk never predicts. <button class="link" data-act="guide">How Dusk works</button></p>
     ${anonInProgress() ? `<button class="btn" data-act="anonnext">Continue your single dusk · card ${anonInProgress().next} of 3</button><button class="link" data-act="anonreset">Start a new single dusk instead</button>` : `<button class="btn" data-act="anon">Try a single dusk · 3 cards</button>`}
     <div class="signin"><div id="gsi"></div><span class="muted small">Sign in for a 7, 21 or 40 evening crossing</span>
     ${location.hostname === "localhost" ? `<button class="link" data-act="devlogin">Sign in as a test user (local only)</button>` : ""}</div>
@@ -289,18 +439,29 @@ function renderBegin(opts = {}) {
     <label for="jw" class="muted small">Say it in your own words. Only you and the Reader see this.</label>
     <textarea id="jw" maxlength="1000" placeholder="What's changing, and how it feels right now."></textarea>
   </section>
-  ${anon ? "" : `<section class="panel"><span class="eyebrow">Your crossing</span><h3>How long will you cross?</h3>
-    <div class="opts" id="len">${LENGTHS.map((l) => `<button class="opt" aria-pressed="${l.n === len}" data-n="${l.n}"><span>${l.name}<small>${l.sub}</small></span><b>${l.n}</b></button>`).join("")}</div></section>`}
+  ${anon ? `<section class="panel">${expectHtml(3)}<p class="muted small">A single dusk doesn't track change over time. Sign in for a longer crossing to see how you move. <button class="link" data-act="guide">How Dusk works</button></p></section>` : `<section class="panel"><span class="eyebrow">Your crossing</span><h3>How long will you cross?</h3>
+    <div class="opts" id="len">${LENGTHS.map((l) => `<button class="opt" aria-pressed="${l.n === len}" data-n="${l.n}"><span>${l.name} · ${l.sub}<small class="best">${l.best}</small></span><b>${l.n}</b></button>`).join("")}</div>
+    <p class="why" id="why"></p>
+    <div id="expect"></div>
+    <button class="link" data-act="guide" style="justify-self:start">How Dusk works</button></section>
+  <section class="panel"><span class="eyebrow">Your intention</span><h3>What would make this crossing worth it?</h3>
+    <label for="intent" class="muted small">One honest sentence. At the Return you'll be asked whether you found it.</label>
+    <textarea id="intent" maxlength="600" style="min-height:80px" placeholder="To stop blaming myself. To know what I want next. To feel steady again."></textarea></section>
+  <section class="panel"><span class="eyebrow">Your compass · where you are tonight</span>
+    <p class="muted small">Three quick readings. You'll set them again at each weekly check-in and at the Return, and the Scroll shows how they moved.</p>
+    ${compassHtml("start")}</section>`}
   <button class="btn" id="go">${anon ? "Begin tonight's dusk" : "Begin the crossing"}</button>
   <button class="link" data-act="home">Not now</button>
   <p class="error" id="err" hidden></p>`;
   app.querySelectorAll("#jt .chip").forEach((b) => b.onclick = () => { app.querySelectorAll("#jt .chip").forEach((x) => x.setAttribute("aria-pressed", x === b)); jt = b.dataset.j; });
-  app.querySelectorAll("#len .opt").forEach((b) => b.onclick = () => { app.querySelectorAll("#len .opt").forEach((x) => x.setAttribute("aria-pressed", x === b)); len = +b.dataset.n; });
+  const showLen = () => { const l = LENGTHS.find((x) => x.n === len); const w = document.getElementById("why"); if (w) { w.textContent = "Why " + l.n + ": " + l.why; document.getElementById("expect").innerHTML = expectHtml(len); } };
+  app.querySelectorAll("#len .opt").forEach((b) => b.onclick = () => { app.querySelectorAll("#len .opt").forEach((x) => x.setAttribute("aria-pressed", x === b)); len = +b.dataset.n; showLen(); });
+  showLen();
   document.getElementById("go").onclick = async (ev) => {
     const words = document.getElementById("jw").value.trim();
     if (anon) { store.set("anon", { junction_type: jt, junction_words: words, evenings: [] }); return renderAnonOffer(); }
     ev.target.disabled = true;
-    try { await api("/crossing", { junction_type: jt, junction_words: words, length: len, start_date: today() }); route(); }
+    try { await api("/crossing", { junction_type: jt, junction_words: words, length: len, start_date: today(), intention: document.getElementById("intent").value.trim(), compass: readCompass("start") }); route(); }
     catch (e) { const er = document.getElementById("err"); er.textContent = e.message; er.hidden = false; ev.target.disabled = false; }
   };
 }
@@ -324,10 +485,11 @@ async function renderHome() {
     <h2>Evening ${next} of ${c.length}</h2>
     ${crossingPath(c.length, done)}
     ${sunsetLine()}
-    ${unlocked ? `<button class="btn" data-act="offer">Open tonight's evening</button>` : `<p class="muted">Tonight's evening is done. The next one opens tomorrow at dusk.</p>`}
+    ${unlocked ? `<button class="btn" data-act="offer">Open tonight's evening</button>` : `<p class="muted">Tonight's evening is done. The next one opens tomorrow at dusk. Miss a day and your crossing simply waits.</p>`}
     ${testMode() ? `<p class="muted small">Test mode is on: evenings open any time.</p>` : ""}
   </section>
   ${mv !== "return" ? waitingHtml(c.length) : ""}
+  ${(b.checkins && b.checkins.length) || c.intention ? movedPanel(b) : ""}
   ${reading ? `<section class="panel reading"><span class="eyebrow">The Reader · week ${reading.week}</span>${reading.text.reflections.map((r) => `<p>${esc(r)}</p>`).join("")}<p class="question">${esc(reading.text.question)}</p></section>` : ""}
   ${done ? `<section class="panel"><span class="eyebrow">Your cards so far</span><div class="strip">${b.evenings.filter((e) => e.picked && e.entry !== null).map((e) => `<button data-act="seeentry" data-n="${e.n}" aria-label="Evening ${e.n}: ${esc(CARD[e.picked]?.name)}">${mini(e.picked)}</button>`).join("")}</div></section>` : ""}
   <div id="entryview"></div>`;
@@ -373,6 +535,7 @@ function renderReveal(ev, card, question, onClose) {
   </section>
   <section class="panel">
     <p class="question">${esc(question)}</p>
+    ${weatherPicker()}
     <label for="entry" class="muted small">Write for a few minutes. No word count, no right answer.</label>
     <textarea id="entry" maxlength="6000" placeholder="Whatever comes."></textarea>
     <button class="btn" id="close">Close the evening</button>
@@ -381,26 +544,58 @@ function renderReveal(ev, card, question, onClose) {
   const ta = document.getElementById("entry"), draftKey = "draft." + (ev.crossing_id || "anon") + "." + ev.n;
   ta.value = store.get(draftKey) || "";
   ta.oninput = () => store.set(draftKey, ta.value);
+  let weather = null;
+  app.querySelectorAll("#wx .chip").forEach((b) => b.onclick = () => { app.querySelectorAll("#wx .chip").forEach((x) => x.setAttribute("aria-pressed", x === b)); weather = b.dataset.w; });
   document.getElementById("close").onclick = async (e) => {
     e.target.disabled = true; e.target.textContent = "The Reader is reading…";
-    try { const out = await onClose(ta.value.trim()); store.set(draftKey, null); renderAfter(ev, card, out); }
+    try { const out = await onClose(ta.value.trim(), weather); store.set(draftKey, null); renderAfter(ev, card, out); }
     catch (er) { const x = document.getElementById("err"); x.textContent = er.message; x.hidden = false; e.target.disabled = false; e.target.textContent = "Close the evening"; }
   };
 }
+const readingHtml = (r) => `<section class="panel reading"><span class="eyebrow">Your reading · week ${r.week}</span>${r.text.reflections.map((x) => `<p>${esc(x)}</p>`).join("")}<p class="question">${esc(r.text.question)}</p></section>`;
 function renderAfter(ev, card, out) {
-  const r = out.reading;
+  const r = out.reading, weekly = r && r.week < 99, final = r && r.week === 99;
   app.innerHTML = `${topBar(store.get("user"))}
   <section class="panel"><span class="eyebrow">The Reader</span><p class="reader">${esc(out.reader_line)}</p></section>
   ${out.needs_support ? supportBox() : ""}
-  ${r && r.week < 99 ? `<section class="panel reading"><span class="eyebrow">Your reading · week ${r.week}</span>${r.text.reflections.map((x) => `<p>${esc(x)}</p>`).join("")}<p class="question">${esc(r.text.question)}</p></section>` : ""}
-  <button class="btn" data-act="${out.next || "home"}">${out.cta || (r && r.week === 99 ? "Receive your Crossing Scroll" : "Back to your crossing")}</button>`;
+  ${weekly ? `<section class="panel" id="weekcheck"><span class="eyebrow">End of week ${r.week} · check-in</span><h3>Where are you now?</h3>
+    <p class="muted small">Same three readings as when you began. Then your weekly reading opens.</p>${compassHtml("week")}
+    <button class="btn" id="savecheck">Save and open my reading</button><p class="error" id="err" hidden></p></section><div id="readingslot"></div>` : ""}
+  <button class="btn ${weekly ? "ghost" : ""}" data-act="${final ? "returncheck" : out.next || "home"}">${out.cta || (final ? "Close your crossing" : "Back to your crossing")}</button>`;
+  if (weekly) document.getElementById("savecheck").onclick = async (e) => {
+    e.target.disabled = true;
+    try { await api("/checkin", { crossing_id: app._crossing.id, kind: "week", week: r.week, ...readCompass("week") }); document.getElementById("weekcheck").remove(); document.getElementById("readingslot").innerHTML = readingHtml(r); }
+    catch (er) { const x = document.getElementById("err"); x.textContent = er.message; x.hidden = false; e.target.disabled = false; }
+  };
+}
+async function renderReturnCheck() {
+  setSky("return");
+  const b = await api("/crossing");
+  const c = b.crossing; app._crossing = c;
+  let answer = null;
+  app.innerHTML = `${topBar(store.get("user"))}
+  <section class="panel"><span class="eyebrow">The Return · closing your crossing</span><h2>Two last questions before your Scroll.</h2>
+    ${c.intention ? `<p><span class="muted small">When you began, you wrote that this crossing would be worth it if:</span><br><span class="question">${esc(c.intention)}</span></p>` : ""}
+    <h3>Did you find what you came for?</h3>
+    <div class="chips" id="ans">${Object.entries(ANSWERS).map(([k, v]) => `<button class="chip" aria-pressed="false" data-a="${k}">${v}</button>`).join("")}</div>
+    <textarea id="anote" maxlength="1000" style="min-height:70px" placeholder="Anything you want to say about it (optional)."></textarea></section>
+  <section class="panel"><span class="eyebrow">Your compass · now</span>${compassHtml("ret")}</section>
+  <button class="btn" id="finish" disabled>See your Crossing Scroll</button><p class="error" id="err" hidden></p>`;
+  app.querySelectorAll("#ans .chip").forEach((x) => x.onclick = () => { app.querySelectorAll("#ans .chip").forEach((y) => y.setAttribute("aria-pressed", y === x)); answer = x.dataset.a; document.getElementById("finish").disabled = false; });
+  document.getElementById("finish").onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      await api("/checkin", { crossing_id: c.id, kind: "return", ...readCompass("ret") });
+      renderScroll(await api("/crossing/outcome", { crossing_id: c.id, answer, note: document.getElementById("anote").value.trim() }));
+    } catch (er) { const x = document.getElementById("err"); x.textContent = er.message; x.hidden = false; e.target.disabled = false; }
+  };
 }
 
 async function openEvening() {
   const c = app._crossing;
   const { evening } = await api("/evening/offer", { crossing_id: c.id });
   evening.crossing_id = c.id;
-  const reveal = (card, question) => renderReveal(evening, card, question, (entry) => api("/evening/entry", { crossing_id: c.id, n: evening.n, entry }));
+  const reveal = (card, question) => renderReveal(evening, card, question, (entry, weather) => api("/evening/entry", { crossing_id: c.id, n: evening.n, entry, weather }));
   if (evening.picked) return reveal(CARD[evening.picked], evening.question);
   renderPicks(evening, async (id) => { const out = await api("/evening/pick", { crossing_id: c.id, n: evening.n, card_id: id }); reveal(out.card, out.question); });
 }
@@ -421,9 +616,9 @@ function renderAnonOffer() {
     ev = { n: a.evenings.length + 1, movement: movementFor(3, a.evenings.length + 1), offered: anonOffer(a.evenings.length + 1, a.evenings.map((e) => e.picked)) };
     a.evenings.push(ev); store.set("anon", a);
   }
-  const reveal = () => renderReveal(ev, CARD[ev.picked], ev.question, async (entry) => {
-    const out = await api("/anon/reflect", { card_id: ev.picked, n: ev.n, question: ev.question, entry, junction_words: a.junction_words, earlier: a.evenings.filter((x) => x.n < ev.n) });
-    Object.assign(ev, { entry, reader_line: out.line }); store.set("anon", a);
+  const reveal = () => renderReveal(ev, CARD[ev.picked], ev.question, async (entry, weather) => {
+    const out = await api("/anon/reflect", { card_id: ev.picked, n: ev.n, question: ev.question, entry, weather, junction_words: a.junction_words, earlier: a.evenings.filter((x) => x.n < ev.n) });
+    Object.assign(ev, { entry, weather, reader_line: out.line }); store.set("anon", a);
     return { reader_line: out.line, needs_support: out.needs_support, next: ev.n < 3 ? "anonnext" : "anonscroll", cta: ev.n < 3 ? "Turn to the next card" : "Receive your Crossing Scroll" };
   });
   if (ev.picked) return reveal();
@@ -435,6 +630,7 @@ function renderAnonScroll() {
   app.innerHTML = `${topBar()}
   <section class="panel" style="text-align:center"><span class="eyebrow">One dusk · complete</span><h2>Your Crossing Scroll</h2>
   <div class="strip" style="grid-template-columns:repeat(3,1fr);max-width:300px;margin:0 auto">${a.evenings.map((e) => mini(e.picked)).join("")}</div></section>
+  ${a.evenings.some((e) => e.weather) ? `<section class="panel"><span class="eyebrow">Tonight's weather</span>${weatherStrip(a.evenings)}</section>` : ""}
   <section class="panel">${a.evenings.map(entryHtml).join("")}</section>
   <section class="panel"><p>A longer crossing gives the Reader time to notice patterns across your evenings.</p><div class="signin"><div id="gsi"></div></div>
   <button class="link" data-act="anonreset">Start another single dusk</button></section>`;
@@ -450,6 +646,8 @@ function renderScroll(b) {
   <section class="panel" style="text-align:center"><span class="eyebrow">Evening ${c.length} · The Return</span><h2>Your Crossing Scroll</h2>
   <p class="muted small">${c.length} cards · ${fmtDate(c.start_date)} → ${fmtDate(c.return_date)}</p>
   <div class="strip">${ev.map((e) => mini(e.picked)).join("")}</div></section>
+  ${c.outcome_answer ? "" : `<section class="panel"><p>Two last questions close your crossing and complete the picture of how you moved.</p><button class="btn" data-act="returncheck">Close your crossing</button></section>`}
+  ${movedPanel(b)}
   ${closing ? `<section class="panel"><span class="eyebrow">The Reader</span><p class="reader">${esc(closing.text.closing)}</p></section>` : ""}
   <section class="panel">${ev.map(entryHtml).join("")}</section>
   <button class="btn" data-act="newcrossing">Begin a new crossing</button>`;
@@ -461,6 +659,7 @@ function renderMenu() {
   app.innerHTML = `${topBar(user)}
   <section class="panel"><span class="eyebrow">Signed in</span><p>${esc(user?.name)}<br><span class="muted small">${esc(user?.email)}</span></p>
   <button class="btn ghost" data-act="home">Back to my crossing</button>
+  <button class="btn ghost" data-act="guide">How Dusk works</button>
   <button class="btn ghost" data-act="newcrossing">Start a different crossing</button>
   <button class="btn ghost" data-act="toggletest">${testMode() ? "Turn test mode off" : "Turn test mode on (open evenings any time)"}</button>
   ${installHtml()}
@@ -481,6 +680,8 @@ app.addEventListener("click", async (e) => {
     else if (act === "anonreset") { store.set("anon", null); renderBegin({ anon: true }); }
     else if (act === "offer") { t.disabled = true; await openEvening(); }
     else if (act === "locate") locate();
+    else if (act === "guide") renderGuide();
+    else if (act === "returncheck") { t.disabled = true; await renderReturnCheck(); }
     else if (act === "install") { if (installEvent) { installEvent.prompt(); await installEvent.userChoice; installEvent = null; route(); } }
     else if (act === "menu") renderMenu();
     else if (act === "newcrossing") renderBegin();
